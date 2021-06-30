@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="ASCII"?>
+<fsa:FSAModel
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:fsa="http://www.example.org/fsa"
+    xsi:schemaLocation="http://www.example.org/fsa ../metaModel/fsa.ecore">
+  <transitions
+      event="12"
+      source="//@states.0"
+      target="//@states.1"/>
+  <transitions
+      event="13"
+      source="//@states.0"
+      target="//@states.2"/>
+  <transitions
+      event="15"
+      source="//@states.0"
+      target="//@states.4"/>
+  <transitions
+      event="24"
+      source="//@states.1"
+      target="//@states.3"/>
+  <transitions
+      event="23"
+      source="//@states.1"
+      target="//@states.2"/>
+  <transitions
+      event="34"
+      source="//@states.2"
+      target="//@states.3"/>
+  <transitions
+      event="37"
+      source="//@states.2"
+      target="//@states.6"/>
+  <transitions
+      event="41"
+      source="//@states.3"
+      target="//@states.0"/>
+  <transitions
+      event="47"
+      source="//@states.3"
+      target="//@states.6"/>
+  <transitions
+      event="57"
+      source="//@states.4"
+      target="//@states.6"/>
+  <transitions
+      event="62"
+      source="//@states.5"
+      target="//@states.1"/>
+  <transitions
+      event="75"
+      source="//@states.6"
+      target="//@states.4"/>
+  <transitions
+      event="71"
+      source="//@states.6"
+      target="//@states.0"/>
+  <states isInitial="true"
+      name="s1"
+      outgoingTransitions="//@transitions.7 //@transitions.12"
+      incomingTransitions="//@transitions.0 //@transitions.1 //@transitions.2"
+      weight="20"/>
+  <states name="s2"
+      outgoingTransitions="//@transitions.0 //@transitions.10"
+      incomingTransitions="//@transitions.3 //@transitions.4"
+      weight="15"/>
+  <states name="s3"
+      outgoingTransitions="//@transitions.1 //@transitions.4"
+      incomingTransitions="//@transitions.5 //@transitions.6"
+      weight="15"/>
+  <states name="s4"
+      outgoingTransitions="//@transitions.3 //@transitions.5"
+      incomingTransitions="//@transitions.7 //@transitions.8"
+      weight="20"/>
+  <states name="s5"
+      outgoingTransitions="//@transitions.2 //@transitions.11"
+      incomingTransitions="//@transitions.9"
+      weight="20"/>
+  <states name="s6"
+      incomingTransitions="//@transitions.10"
+      weight="20"/>
+  <states isFinal="true"
+      name="s7"
+      outgoingTransitions="//@transitions.6 //@transitions.9 //@transitions.8"
+      incomingTransitions="//@transitions.11 //@transitions.12"
+      weight="20"/>
+</fsa:FSAModel>

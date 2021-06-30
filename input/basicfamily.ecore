@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="basicfamily" nsURI="www.basicfamilyMM.com" nsPrefix="www.basicfamilyMM.com">
+  <eClassifiers xsi:type="ecore:EClass" name="FamilyRoot">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="HasMember" upperBound="-1"
+        eType="#//Person" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Woman" eSuperTypes="#//Person"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Man" eSuperTypes="#//Person"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Person">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="father" eType="#//Man"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="mother" eType="#//Woman"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="hasParent" upperBound="2"
+                         eType="#//Person" eOpposite="#//Person/hasChild"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="hasChild" upperBound="-1"
+                         eType="#//Person" eOpposite="#//Person/hasParent"/>
+  </eClassifiers>
+
+</ecore:EPackage>

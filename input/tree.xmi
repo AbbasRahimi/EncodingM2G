@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<www.tree.com:tree
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:www.tree.com="www.tree.com"
+    xsi:schemaLocation="www.tree.com ../metamodel/Tree.ecore"
+    name="root">
+  <child name="n1">
+    <child name="n11"/>
+  </child>
+  <child name="n2">
+    <child name="n21"/>
+    <child name="n22">
+      <child
+          name="n221"/>
+      <child
+          name="n222"/>
+      <child
+          name="n223"/>
+    </child>
+  </child>
+  <child name="n3"/>
+  <child name="n4"/>
+</www.tree.com:tree>
