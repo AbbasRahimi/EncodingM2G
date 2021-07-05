@@ -5,18 +5,22 @@ from pyecore.resources import ResourceSet, URI
 import matplotlib.pyplot as plt
 import networkx as nx
 import os
+import random
 import numpy
 import itertools
 
 
 class ENCODE_M2G:
     id_iter = itertools.count()  # It Generates a new ID incrementally by each call
+    map_iter = itertools.count(1)  # It Generates a new number incrementally by each call (it starts from 1)
 
     classes = []  # all classes inside metamodel
     unregulated_inheritance = []  # all classes inside metamodel with unsolved parent
     objects = []  # An array including all objects/elements in xmi file
     matrix_of_graph: ndarray = []  # 2D-Matrix of corresponding graph
     references_dictionary = {}  # A set of class references features by class name
+    references_type_mapping = {}  # A dictionary that contains references mapped to numbers
+    node_type = []  # 2D-Matrix containing node types(labels)
     true_containment_classes = []
     including_root = False  # Show that we consider root element as a node or not
 
@@ -41,10 +45,15 @@ class ENCODE_M2G:
             model_root = resource.contents[0]
             if self.including_root:
                 model_root._internal_id = next(self.id_iter)
+                look_inside(model_root)
+                self.node_type.append([model_root._internal_id, "root"])
             self.extract_objects_form_model(model_root)
-
-            for i in self.references_dictionary:
-                print("references_dictionary :", i)
+            for h in self.node_type:
+                print("node_id:", h[0], "node_type", h[1])
+            for o in self.references_type_mapping:
+                print("mapping->", o, " : ", self.references_type_mapping[o])
+            # for i in self.references_dictionary:
+            #     print("references_dictionary->", i, " : ", self.references_dictionary[i])
             for j in self.true_containment_classes:
                 print("true_containment: ", j)
         except pyecore.valuecontainer.BadValueError:
@@ -65,7 +74,7 @@ class ENCODE_M2G:
 
         #  Completing the reference dictionary by adding parent references that are not available at first
         for e_class in self.unregulated_inheritance:
-            references, containment_classes= self.extract_single_class_references(e_class)
+            references, containment_classes = self.extract_single_class_references(e_class)
             self.references_dictionary.update(references)
 
     def extract_single_class_references(self, e_class):
@@ -79,6 +88,8 @@ class ENCODE_M2G:
         for ref in e_class.eStructuralFeatures:
             if ref.eClass.name == "EReference":  # Extracting inner relations
                 inner_references.append(ref.name)
+                if ref.name not in self.references_type_mapping:
+                    self.references_type_mapping.update({ref.name: next(self.map_iter)})
                 if ref.containment:
                     true_containment_classes.append(ref.name)
 
@@ -95,7 +106,8 @@ class ENCODE_M2G:
             else:
                 if e_class.eSuperTypes.items[0].name in self.references_dictionary:
                     # if parent is already in dictionary
-                    references_dictionary.update({e_class.name: self.references_dictionary[e_class.eSuperTypes.items[0].name]})
+                    references_dictionary.update(
+                        {e_class.name: self.references_dictionary[e_class.eSuperTypes.items[0].name]})
                 else:
                     # if parent doesn't exist in dictionary, add parent to dictionary
                     self.unregulated_inheritance.append(e_class)
@@ -108,6 +120,7 @@ class ENCODE_M2G:
         for class_name in self.true_containment_classes:
             for obj in getattr(root_object, class_name):
                 obj._internal_id = next(self.id_iter)  # Getting an ID for assign to each element
+                self.node_type.append([obj._internal_id, obj._containment_feature.eType.name])
                 # print("node name: ", obj.name, " -> node id: ", obj._internal_id)
                 self.objects.append(obj)
                 for inner_class_name in self.true_containment_classes:
@@ -142,26 +155,26 @@ class ENCODE_M2G:
         for inner_ref_name in inner_references_name:
             if hasattr(obj, inner_ref_name):
                 inner_element = getattr(obj, inner_ref_name)
-                if inner_element is not None:  # check if references feature is not empty, try to find edges
-                    if hasattr(inner_element, '_internal_id'):  # If we have a single inside elements
+                if inner_element is not None:  # check if references feature is not empty, try to find relation (edges)
+                    if hasattr(inner_element, '_internal_id'):  # If we have a single inside element
                         if inner_element._internal_id is not None:
-                            self.matrix_of_graph[obj._internal_id][inner_element._internal_id] = 1
+                            self.matrix_of_graph[obj._internal_id][inner_element._internal_id] = self.references_type_mapping[inner_ref_name]
                             if inner_element._internal_id is not 0:  # if inner_element is not root
                                 self.check_and_add_relations_with_root(inner_element)
                             else:  # if obj is root add 1 for corresponding entry in matrix
-                                self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = 1
+                                self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = self.references_type_mapping[inner_ref_name]
                     else:  # If we have a set of inside elements
                         set_elements = inner_element.items
                         for i in set_elements:
                             if i._internal_id is not None:
-                                self.matrix_of_graph[obj._internal_id][i._internal_id] = 1
+                                self.matrix_of_graph[obj._internal_id][i._internal_id] = self.references_type_mapping[inner_ref_name]
                                 self.check_and_add_relations_with_root(i)
 
     def check_and_add_relations_with_root(self, obj):
         if self.including_root and obj._container._internal_id == 0:
             # Add an 1 for the root's relations
-            self.matrix_of_graph[obj._internal_id][obj._container._internal_id] = 1
-            self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = 1
+            self.matrix_of_graph[obj._internal_id][obj._container._internal_id] = self.references_type_mapping[obj._containment_feature.name]
+            self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = self.references_type_mapping[obj._containment_feature.name]
 
 
 def look_inside(obj):
@@ -194,30 +207,14 @@ class GRAPH:
 
 # if __name__ == "__main__":
 #     ENCODE_M2G(metamodel_name="fsa.ecore", model_name="FSAModel.xmi")
+# if __name__ == "__main__":
+#     ENCODE_M2G(metamodel_name="basicfamily.ecore", model_name="FamilyRoot.xmi")
 if __name__ == "__main__":
-    ENCODE_M2G(metamodel_name="basicfamily.ecore", model_name="FamilyRoot.xmi")
-# if __name__ == "__main__":
-#     ENCODE_M2G(metamodel_name="Tree.ecore", model_name="tree.xmi")
+    ENCODE_M2G(metamodel_name="Tree.ecore", model_name="tree.xmi")
 
 
 
 
-
-
-
-
-
-# if __name__ == "__main__":
-#     ENCODE_M2G(metamodel_name="BPMN2.ecore", model_name="MessageReceival.xmi")
-
-# def extract_single_class_references(e_class):
-#     """"
-#     :param e_class:
-#     :return e_references:
-#     """
-#     e_references_temp = []
-#     e_opposites = []
-#     true_containment_classes = []
 #     for ref in e_class.eStructuralFeatures.items:
 #         if ref.eClass.name == "EReference":
 #             e_references_temp.append(ref.name)
@@ -225,10 +222,7 @@ if __name__ == "__main__":
 #                 true_containment_classes.append(ref.containment)
 #             if ref.eOpposite is not None:
 #                 e_opposites.append([ref.name, ref.eOpposite.name])
-#
-#     return e_references_temp, e_opposites, true_containment_classes
-
-# def check_name_uniqueness(self, name_list):
+# def check_name_uniqueness(name_list):
 #     """
 #     Finding elements with the same name in input array and changing name of the last one
 #
@@ -240,7 +234,7 @@ if __name__ == "__main__":
 #         k += 1
 #         for i in range(k, len(name_list), 1):
 #             if item == name_list[i]:
-#                 print("conflict founded: We have two element with name <", item, ">")
+#                 print("conflict founded: We have two references with name <", item, ">")
 #                 n = random.randint(0, 10000)
 #                 name_list[i] = item + str(n)
 #     return name_list
