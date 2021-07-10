@@ -54,7 +54,7 @@ class ENCODE_M2G:
         except pyecore.valuecontainer.BadValueError:
             raise Exception("Sorry, Pyecore cannot pars the xmi file. please check the order of inside element.")
 
-        self.roll_back_temporary_change(exp_refs)
+        self.rollback_temporary_change(exp_refs)
 
     def show_details(self):
         print("...................Details...................")
@@ -84,10 +84,10 @@ class ENCODE_M2G:
                                 exp_ref.append(ref)
         return exp_ref
 
-    def roll_back_temporary_change(self, exp_ref):
+    def rollback_temporary_change(self, exp_ref):
         if len(exp_ref) > 0:
             for ref in exp_ref:
-                ref.upperBound= ref.upperBound-1
+                ref.upperBound = ref.upperBound-1
 
     def extract_classes_references(self, metamodel_root):
 
@@ -175,6 +175,7 @@ class ENCODE_M2G:
         for obj in self.objects:
             self.seek_in_depth(obj, self.references_dictionary)
         print("matrix shape is:", self.matrix_of_graph.shape, "\n", self.matrix_of_graph)
+        return self.matrix_of_graph
 
     def create_graph(self, objects):
         node = NODE
