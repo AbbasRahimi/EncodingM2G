@@ -23,6 +23,7 @@ class ENCODE_M2G:
     node_type = []  # 2D-Matrix containing node types(labels)
     true_containment_classes = []
     including_root = False  # Show that we consider root element as a node or not
+    mm_root=[]
 
     def __init__(self, metamodel_name, model_name):
         self.load_model(metamodel_name, model_name)
@@ -35,15 +36,15 @@ class ENCODE_M2G:
         """
         rset = ResourceSet()
         resource = rset.get_resource(URI('../input/' + metamodel_name))
-        mm_root = resource.contents[0]
-        rset.metamodel_registry[mm_root.nsURI] = mm_root
+        self.mm_root = resource.contents[0]
+        exp_refs = self.check_for_bound_exception()
+        rset.metamodel_registry[self.mm_root.nsURI] = self.mm_root
 
         self.including_root = True
-        self.extract_classes_references(mm_root)
+        self.extract_classes_references(self.mm_root)
         try:
             resource = rset.get_resource(URI('../input/' + model_name))
             model_root = resource.contents[0]
-            # TODO there is a problem with references with lowerbound=1 and upperbound=2 (cannot get set of elements)
             if self.including_root:
                 model_root._internal_id = next(self.id_iter)
                 self.node_type.append([model_root._internal_id, "root"])
@@ -52,7 +53,8 @@ class ENCODE_M2G:
             # self.show_details()
         except pyecore.valuecontainer.BadValueError:
             raise Exception("Sorry, Pyecore cannot pars the xmi file. please check the order of inside element.")
-        return
+
+        self.roll_back_temporary_change(exp_refs)
 
     def show_details(self):
         print("...................Details...................")
@@ -67,6 +69,26 @@ class ENCODE_M2G:
         print("...................True containment...................")
         for j in self.true_containment_classes:
             print("true_containment: ", j)
+
+    def check_for_bound_exception(self):
+        # if we have upperBound-lowerBound=1 then pyecore cannot get set of elements, so we will temporary
+        # add 1 to upperBound
+        exp_ref = []
+        for e_class in self.mm_root.eClassifiers:
+            if e_class.eClass.name is "EClass":
+                for ref in e_class.eStructuralFeatures:
+                    if ref.eClass.name == "EReference":  # Extracting inner relations
+                        if hasattr(ref,"lowerBound") and hasattr(ref,"upperBound"):
+                            if ref.lowerBound > 0 and ref.upperBound-ref.lowerBound == 1:
+                                ref.upperBound = ref.upperBound + 1
+                                exp_ref.append(ref)
+        return exp_ref
+
+    def roll_back_temporary_change(self, exp_ref):
+        if len(exp_ref) > 0:
+            for ref in exp_ref:
+                ref.upperBound= ref.upperBound-1
+
     def extract_classes_references(self, metamodel_root):
 
         for e_class in metamodel_root.eClassifiers:
