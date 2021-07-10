@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="ASCII"?>
+<Family:Family xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:Family="www.Family.com" Surname="Karimi">
+  <has FirstName="9PJXZQi" Age="22" Education="bachelor"/>
+  <has FirstName="aa" Age="4" Education="bachelor"/>
+  <has FirstName="xyz" Age="12" Education="master"/>
+  <has FirstName="nima" Age="22" Education="PhD"/>
+  <has FirstName="ali" Age="6" Education="bachelor"/>
+  <has FirstName="mehdi" Age="12" Education="bachelor"/>
+  <has FirstName="Niloo" Age="34" Education="bachelor"/>
+  <has FirstName="Mina" Age="24" Education="PhD"/>
+  <has FirstName="Sina" Age="45" Education="PhD"/>
+  <has FirstName="Kamran" Age="23" Education="PhD"/>
+  <Addr Street="Nik" Alley="a" Number="2"/>
+  <Addr Street="Fati" Alley="z" Number="1"/>
+</Family:Family>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AIDS:atom xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:AIDS="http://www.example.org/AIDS"
+    xsi:schemaLocation="http://www.example.org/AIDS AIDS.ecore"
+    chem="1.0"
+    x="1.598100185394287"
+    y="0.75">
+  <valence1
+      chem="1.0"
+      x="2.598100185394287"
+      y="-0.25">
+    <valence3
+        chem="4.0"
+        x="3.598100185394287"
+        y="-1.25"
+        symbol="2"/>
+  </valence1>
+  <valence1
+      chem="4.0"
+      x="4.732100009918213"
+      y="1.25"
+      symbol="2">
+    <valence1
+        chem="1.0"
+        x="5.865999937057495"
+        y="0.75">
+      <valence1
+          chem="1.0"
+          x="6.0"
+          y="1.25">
+          <valence3 chem="4.0" x="7.658844411002361" y="3.50"/>
+      </valence1>
+    </valence1>
+  </valence1>
+  <valence2
+      chem="4.0"
+      x="8.464099884033203"
+      y="1.25"
+      symbol="2">
+    <valence1
+        chem="1.0"
+        x="9.330100059509277"
+        y="0.75">
+      <valence1
+          chem="1.0"
+          x="10.196199893951416"
+          y="1.25"/>
+    </valence1>
+  </valence2>
+</AIDS:atom>

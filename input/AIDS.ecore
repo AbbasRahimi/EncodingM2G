@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="AIDS" nsURI="http://www.example.org/AIDS" nsPrefix="AIDS">
+  <eClassifiers xsi:type="ecore:EClass" name="atom">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="chem" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EFloat"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="x" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="y" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="valence1" upperBound="10"
+        eType="#//atom" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="valence3" upperBound="10"
+        eType="#//atom" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="valence2" upperBound="10"
+        eType="#//atom" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="charge" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EFloat"
+        iD="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="symbol" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+  </eClassifiers>
+</ecore:EPackage>

@@ -43,23 +43,30 @@ class ENCODE_M2G:
         try:
             resource = rset.get_resource(URI('../input/' + model_name))
             model_root = resource.contents[0]
+            # TODO there is a problem with references with lowerbound=1 and upperbound=2 (cannot get set of elements)
             if self.including_root:
                 model_root._internal_id = next(self.id_iter)
-                look_inside(model_root)
                 self.node_type.append([model_root._internal_id, "root"])
             self.extract_objects_form_model(model_root)
-            for h in self.node_type:
-                print("node_id:", h[0], "node_type", h[1])
-            for o in self.references_type_mapping:
-                print("mapping->", o, " : ", self.references_type_mapping[o])
-            # for i in self.references_dictionary:
-            #     print("references_dictionary->", i, " : ", self.references_dictionary[i])
-            for j in self.true_containment_classes:
-                print("true_containment: ", j)
+            self.create_matrix()
+            # self.show_details()
         except pyecore.valuecontainer.BadValueError:
             raise Exception("Sorry, Pyecore cannot pars the xmi file. please check the order of inside element.")
         return
 
+    def show_details(self):
+        print("...................Details...................")
+        for h in self.node_type:
+            print("node_id:", h[0], "node_type", h[1])
+        print("...................Node mapping...................")
+        for o in self.references_type_mapping:
+            print("mapping->", o, " : ", self.references_type_mapping[o])
+        print("...................References dictionary...................")
+        for i in self.references_dictionary:
+            print("references_dictionary->", i, " : ", self.references_dictionary[i])
+        print("...................True containment...................")
+        for j in self.true_containment_classes:
+            print("true_containment: ", j)
     def extract_classes_references(self, metamodel_root):
 
         for e_class in metamodel_root.eClassifiers:
@@ -118,15 +125,25 @@ class ENCODE_M2G:
         :return:
         """
         for class_name in self.true_containment_classes:
-            for obj in getattr(root_object, class_name):
-                obj._internal_id = next(self.id_iter)  # Getting an ID for assign to each element
-                self.node_type.append([obj._internal_id, obj._containment_feature.eType.name])
-                # print("node name: ", obj.name, " -> node id: ", obj._internal_id)
-                self.objects.append(obj)
+            all_instances_by_same_class_name = getattr(root_object, class_name)
+            if hasattr(all_instances_by_same_class_name, "items"):  # if we have several items in same type
+                for obj in all_instances_by_same_class_name:
+                    if obj not in self.objects:
+                        obj._internal_id = next(self.id_iter)  # Getting an ID for assigning to each element
+                        self.node_type.append([obj._internal_id, obj.eClass.name])
+                        self.objects.append(obj)
+                        for inner_class_name in self.true_containment_classes:
+                            if hasattr(obj, inner_class_name):
+                                self.extract_objects_form_model(obj)
+            elif all_instances_by_same_class_name is not None:  # if we have just one item
+                all_instances_by_same_class_name._internal_id = next(self.id_iter)  # generating an ID for assign to each element
+                self.node_type.append([all_instances_by_same_class_name._internal_id, all_instances_by_same_class_name._containment_feature.eType.name])
+                self.objects.append(all_instances_by_same_class_name)
                 for inner_class_name in self.true_containment_classes:
-                    if hasattr(obj, inner_class_name):
-                        self.extract_objects_form_model(obj)
+                    if hasattr(all_instances_by_same_class_name, inner_class_name):
+                        self.extract_objects_form_model(all_instances_by_same_class_name)
 
+    def create_matrix(self):
         # Create an empty 2D[len(input),len(input)] array as a matrix
         add_root_to_matrix = 0
         if self.including_root:
@@ -136,8 +153,6 @@ class ENCODE_M2G:
         for obj in self.objects:
             self.seek_in_depth(obj, self.references_dictionary)
         print("matrix shape is:", self.matrix_of_graph.shape, "\n", self.matrix_of_graph)
-
-        return
 
     def create_graph(self, objects):
         node = NODE
@@ -151,7 +166,8 @@ class ENCODE_M2G:
         :return:
         """
         inner_references_name = references_dictionary[obj.eClass.name]
-
+        if len(inner_references_name) == 0:  # if we just have relations between root and other elements
+            self.check_and_add_relations_with_root(obj)
         for inner_ref_name in inner_references_name:
             if hasattr(obj, inner_ref_name):
                 inner_element = getattr(obj, inner_ref_name)
@@ -159,21 +175,20 @@ class ENCODE_M2G:
                     if hasattr(inner_element, '_internal_id'):  # If we have a single inside element
                         if inner_element._internal_id is not None:
                             self.matrix_of_graph[obj._internal_id][inner_element._internal_id] = self.references_type_mapping[inner_ref_name]
-                            if inner_element._internal_id is not 0:  # if inner_element is not root
-                                self.check_and_add_relations_with_root(inner_element)
-                            else:  # if obj is root add 1 for corresponding entry in matrix
-                                self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = self.references_type_mapping[inner_ref_name]
                     else:  # If we have a set of inside elements
+                        if self.matrix_of_graph[obj._container._internal_id][obj._internal_id] ==0 and obj._container._internal_id == 0:
+                            self.check_and_add_relations_with_root(obj)
                         set_elements = inner_element.items
                         for i in set_elements:
                             if i._internal_id is not None:
                                 self.matrix_of_graph[obj._internal_id][i._internal_id] = self.references_type_mapping[inner_ref_name]
-                                self.check_and_add_relations_with_root(i)
+                                if i._container._internal_id == 0:
+                                    self.check_and_add_relations_with_root(i)
 
     def check_and_add_relations_with_root(self, obj):
-        if self.including_root and obj._container._internal_id == 0:
-            # Add an 1 for the root's relations
-            self.matrix_of_graph[obj._internal_id][obj._container._internal_id] = self.references_type_mapping[obj._containment_feature.name]
+        if self.including_root:
+            # Add an relation type for the root's relations
+            #TODO self.matrix_of_graph[obj._internal_id][obj._container._internal_id] = self.references_type_mapping[obj._containment_feature.name]
             self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = self.references_type_mapping[obj._containment_feature.name]
 
 
@@ -204,13 +219,6 @@ class NODE:
 class GRAPH:
     nodes = []
 
-
-# if __name__ == "__main__":
-#     ENCODE_M2G(metamodel_name="fsa.ecore", model_name="FSAModel.xmi")
-# if __name__ == "__main__":
-#     ENCODE_M2G(metamodel_name="basicfamily.ecore", model_name="FamilyRoot.xmi")
-if __name__ == "__main__":
-    ENCODE_M2G(metamodel_name="Tree.ecore", model_name="tree.xmi")
 
 
 
