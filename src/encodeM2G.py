@@ -12,18 +12,19 @@ import itertools
 
 class ENCODE_M2G:
     id_iter = itertools.count()  # It Generates a new ID incrementally by each call
+    map_class_iter = itertools.count()  # It Generates a new number incrementally by each call
     map_iter = itertools.count(1)  # It Generates a new number incrementally by each call (it starts from 1)
 
-    classes = []  # all classes inside metamodel
+    classes = {}  # all classes inside metamodel
     unregulated_inheritance = []  # all classes inside metamodel with unsolved parent
     objects = []  # An array including all objects/elements in xmi file
     matrix_of_graph: ndarray = []  # 2D-Matrix of corresponding graph
     references_dictionary = {}  # A set of class references features by class name
     references_type_mapping = {}  # A dictionary that contains references mapped to numbers
-    node_type = []  # 2D-Matrix containing node types(labels)
+    node_types = []  # 2D-Matrix containing node types(labels)
     true_containment_classes = []
     including_root = False  # Show that we consider root element as a node or not
-    mm_root=[]
+    mm_root = []
 
     def __init__(self, metamodel_name, model_name):
         self.load_model(metamodel_name, model_name)
@@ -47,26 +48,32 @@ class ENCODE_M2G:
             model_root = resource.contents[0]
             if self.including_root:
                 model_root._internal_id = next(self.id_iter)
-                self.node_type.append([model_root._internal_id, "root"])
+                self.node_types.append([model_root._internal_id, self.classes[model_root.eClass.name]])
             self.extract_objects_form_model(model_root)
-            self.create_matrix()
-            # self.show_details()
+            output = self.create_matrix()
+            create_triple_file(output, model_name, self.node_types)
+            create_square_matrix(output)
+            self.show_details()
         except pyecore.valuecontainer.BadValueError:
             raise Exception("Sorry, Pyecore cannot pars the xmi file. please check the order of inside element.")
 
         self.rollback_temporary_change(exp_refs)
 
     def show_details(self):
-        print("...................Details...................")
-        for h in self.node_type:
+        print("...................EClass mapping............")
+        dictionary_items = self.classes.items()
+        for item in dictionary_items:
+            print("node_type:", item[0], ": ", item[1])
+        print("\n...................Nodes mapping...................")
+        for h in self.node_types:
             print("node_id:", h[0], "node_type", h[1])
-        print("...................Node mapping...................")
+        print("\n...................reference mapping...................")
         for o in self.references_type_mapping:
             print("mapping->", o, " : ", self.references_type_mapping[o])
-        print("...................References dictionary...................")
+        print("\n...................References dictionary...................")
         for i in self.references_dictionary:
             print("references_dictionary->", i, " : ", self.references_dictionary[i])
-        print("...................True containment...................")
+        print("\n...................True containment...................")
         for j in self.true_containment_classes:
             print("true_containment: ", j)
 
@@ -78,8 +85,8 @@ class ENCODE_M2G:
             if e_class.eClass.name is "EClass":
                 for ref in e_class.eStructuralFeatures:
                     if ref.eClass.name == "EReference":  # Extracting inner relations
-                        if hasattr(ref,"lowerBound") and hasattr(ref,"upperBound"):
-                            if ref.lowerBound > 0 and ref.upperBound-ref.lowerBound == 1:
+                        if hasattr(ref, "lowerBound") and hasattr(ref, "upperBound"):
+                            if ref.lowerBound > 0 and ref.upperBound - ref.lowerBound == 1:
                                 ref.upperBound = ref.upperBound + 1
                                 exp_ref.append(ref)
         return exp_ref
@@ -87,13 +94,15 @@ class ENCODE_M2G:
     def rollback_temporary_change(self, exp_ref):
         if len(exp_ref) > 0:
             for ref in exp_ref:
-                ref.upperBound = ref.upperBound-1
+                ref.upperBound = ref.upperBound - 1
 
     def extract_classes_references(self, metamodel_root):
-
+        if self.mm_root.eClass.name != "EPackage":
+            self.classes.update({self.mm_root.eClass.name: next(self.map_class_iter)})
         for e_class in metamodel_root.eClassifiers:
             if e_class.eClass.name is "EClass":
-                self.classes.append(e_class.eStructuralFeatures.owner.name)
+                if e_class.eStructuralFeatures.owner.name not in self.classes:
+                    self.classes.update({e_class.eStructuralFeatures.owner.name: next(self.map_class_iter)})
                 references, containment_classes = self.extract_single_class_references(e_class)
                 self.references_dictionary.update(references)
                 append_items2list(containment_classes, self.true_containment_classes)
@@ -152,14 +161,16 @@ class ENCODE_M2G:
                 for obj in all_instances_by_same_class_name:
                     if obj not in self.objects:
                         obj._internal_id = next(self.id_iter)  # Getting an ID for assigning to each element
-                        self.node_type.append([obj._internal_id, obj.eClass.name])
+                        self.node_types.append([obj._internal_id, self.classes[obj.eClass.name]])
                         self.objects.append(obj)
                         for inner_class_name in self.true_containment_classes:
                             if hasattr(obj, inner_class_name):
                                 self.extract_objects_form_model(obj)
             elif all_instances_by_same_class_name is not None:  # if we have just one item
-                all_instances_by_same_class_name._internal_id = next(self.id_iter)  # generating an ID for assign to each element
-                self.node_type.append([all_instances_by_same_class_name._internal_id, all_instances_by_same_class_name._containment_feature.eType.name])
+                all_instances_by_same_class_name._internal_id = next(
+                    self.id_iter)  # generating an ID for assign to each element
+                self.node_types.append([all_instances_by_same_class_name._internal_id,
+                                        self.classes[all_instances_by_same_class_name._containment_feature.eType.name]])
                 self.objects.append(all_instances_by_same_class_name)
                 for inner_class_name in self.true_containment_classes:
                     if hasattr(all_instances_by_same_class_name, inner_class_name):
@@ -197,22 +208,56 @@ class ENCODE_M2G:
                 if inner_element is not None:  # check if references feature is not empty, try to find relation (edges)
                     if hasattr(inner_element, '_internal_id'):  # If we have a single inside element
                         if inner_element._internal_id is not None:
-                            self.matrix_of_graph[obj._internal_id][inner_element._internal_id] = self.references_type_mapping[inner_ref_name]
+                            self.matrix_of_graph[obj._internal_id][inner_element._internal_id] = \
+                            self.references_type_mapping[inner_ref_name]
                     else:  # If we have a set of inside elements
-                        if self.matrix_of_graph[obj._container._internal_id][obj._internal_id] ==0 and obj._container._internal_id == 0:
+                        if self.matrix_of_graph[obj._container._internal_id][
+                            obj._internal_id] == 0 and obj._container._internal_id == 0:
                             self.check_and_add_relations_with_root(obj)
                         set_elements = inner_element.items
                         for i in set_elements:
                             if i._internal_id is not None:
-                                self.matrix_of_graph[obj._internal_id][i._internal_id] = self.references_type_mapping[inner_ref_name]
+                                self.matrix_of_graph[obj._internal_id][i._internal_id] = self.references_type_mapping[
+                                    inner_ref_name]
                                 if i._container._internal_id == 0:
                                     self.check_and_add_relations_with_root(i)
 
     def check_and_add_relations_with_root(self, obj):
         if self.including_root:
             # Add an relation type for the root's relations
-            #TODO self.matrix_of_graph[obj._internal_id][obj._container._internal_id] = self.references_type_mapping[obj._containment_feature.name]
-            self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = self.references_type_mapping[obj._containment_feature.name]
+            self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = self.references_type_mapping[
+                obj._containment_feature.name]
+
+
+def create_triple_file(matrix, ds_name, labels):
+    first_line = True
+    with open(ds_name + '_triple.dat', 'w') as f:
+        for idx, row in enumerate(matrix):
+            for idy, val in enumerate(row):
+                if val > 0:
+                    line = "\n" + str(idx) + " " + str(idy) + " " + str(int(val))
+                    if first_line:
+                        line = str(idx) + " " + str(idy) + " " + str(int(val))
+                    f.write(line)
+                    first_line = False
+    first_line = True
+    with open(ds_name + '_label.dat', 'w') as file:
+        for i in labels:
+            line = "\n" + str(i[0]) + "  " + str(i[1])
+            if first_line:
+                line = str(i[0]) + "  " + str(i[1])
+            file.write(line)
+            first_line = False
+
+
+def create_square_matrix(matrix):
+    for idx, row in enumerate(matrix):
+        for idy, val in enumerate(row):
+            if val > 0:
+                matrix[idx, idy] = 1
+                matrix[idy, idx] = 1
+    print(matrix)
+    return matrix
 
 
 def look_inside(obj):
@@ -241,10 +286,6 @@ class NODE:
 
 class GRAPH:
     nodes = []
-
-
-
-
 
 #     for ref in e_class.eStructuralFeatures.items:
 #         if ref.eClass.name == "EReference":
