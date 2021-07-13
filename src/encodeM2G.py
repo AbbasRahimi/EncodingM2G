@@ -63,19 +63,19 @@ class ENCODE_M2G:
         print("...................EClass mapping............")
         dictionary_items = self.classes.items()
         for item in dictionary_items:
-            print("node_type:", item[0], ": ", item[1])
+            print("Node_type:", item[0], ": ", item[1])
         print("\n...................Nodes mapping...................")
         for h in self.node_types:
-            print("node_id:", h[0], "node_type", h[1])
-        print("\n...................reference mapping...................")
+            print("Node_id:", h[0], "Node_type", h[1])
+        print("\n...................Reference mapping...................")
         for o in self.references_type_mapping:
-            print("mapping->", o, " : ", self.references_type_mapping[o])
+            print("Mapping->", o, " : ", self.references_type_mapping[o])
         print("\n...................References dictionary...................")
         for i in self.references_dictionary:
-            print("references_dictionary->", i, " : ", self.references_dictionary[i])
+            print("References_dictionary->", i, " : ", self.references_dictionary[i])
         print("\n...................True containment...................")
         for j in self.true_containment_classes:
-            print("true_containment: ", j)
+            print("True_containment: ", j)
 
     def check_for_bound_exception(self):
         # if we have upperBound-lowerBound=1 then pyecore cannot get set of elements, so we will temporary
@@ -185,7 +185,7 @@ class ENCODE_M2G:
             (len(self.objects) + add_root_to_matrix, len(self.objects) + add_root_to_matrix))
         for obj in self.objects:
             self.seek_in_depth(obj, self.references_dictionary)
-        print("matrix shape is:", self.matrix_of_graph.shape, "\n", self.matrix_of_graph)
+        print("Matrix shape is:", self.matrix_of_graph.shape, "\n", self.matrix_of_graph)
         return self.matrix_of_graph
 
     def create_graph(self, objects):
@@ -256,7 +256,7 @@ def create_square_matrix(matrix):
             if val > 0:
                 matrix[idx, idy] = 1
                 matrix[idy, idx] = 1
-    print(matrix)
+    print("Matrix for NetGAN: \n",matrix)
     return matrix
 
 
