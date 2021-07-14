@@ -53,7 +53,7 @@ class ENCODE_M2G:
             output = self.create_matrix()
             create_triple_file(output, model_name, self.node_types)
             create_square_matrix(output)
-            self.show_details()
+            # self.show_details()
         except pyecore.valuecontainer.BadValueError:
             raise Exception("Sorry, Pyecore cannot pars the xmi file. please check the order of inside element.")
 
@@ -68,6 +68,7 @@ class ENCODE_M2G:
         for h in self.node_types:
             print("Node_id:", h[0], "Node_type", h[1])
         print("\n...................Reference mapping...................")
+        print("Mapping-> no relation: ", 0)
         for o in self.references_type_mapping:
             print("Mapping->", o, " : ", self.references_type_mapping[o])
         print("\n...................References dictionary...................")
@@ -186,6 +187,8 @@ class ENCODE_M2G:
         for obj in self.objects:
             self.seek_in_depth(obj, self.references_dictionary)
         print("Matrix shape is:", self.matrix_of_graph.shape, "\n", self.matrix_of_graph)
+        for o in self.references_type_mapping:
+            print("Mapping->", o, " : ", self.references_type_mapping[o])
         return self.matrix_of_graph
 
     def create_graph(self, objects):
@@ -217,8 +220,9 @@ class ENCODE_M2G:
                         set_elements = inner_element.items
                         for i in set_elements:
                             if i._internal_id is not None:
-                                self.matrix_of_graph[obj._internal_id][i._internal_id] = self.references_type_mapping[
-                                    inner_ref_name]
+                                if not (self.matrix_of_graph[obj._internal_id][i._internal_id] > 0):
+                                    self.matrix_of_graph[obj._internal_id][i._internal_id] = self.references_type_mapping[
+                                        inner_ref_name]
                                 if i._container._internal_id == 0:
                                     self.check_and_add_relations_with_root(i)
 
