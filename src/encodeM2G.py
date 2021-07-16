@@ -53,7 +53,7 @@ class ENCODE_M2G:
             output = self.create_matrix()
             create_triple_file(output, model_name, self.node_types)
             create_square_matrix(output)
-            # self.show_details()
+            self.show_details()
         except pyecore.valuecontainer.BadValueError:
             raise Exception("Sorry, Pyecore cannot pars the xmi file. please check the order of inside element.")
 
