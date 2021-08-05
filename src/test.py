@@ -1,4 +1,4 @@
-import src.encoder as enc
+import encoder as enc
 
 if __name__ == "__main__":
     # enc.ENCODE_M2G(metamodel_name="x2.ecore", model_name="result999_1.xmi")
