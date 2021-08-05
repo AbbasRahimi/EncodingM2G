@@ -2,29 +2,45 @@ from mmap import mmap
 from numpy import ndarray
 import pyecore
 from pyecore.resources import ResourceSet, URI
+from pyecore.ecore import EClass, EAttribute, EString, EObject
+import pyecore.ecore as Ecore
 import matplotlib.pyplot as plt
 import networkx as nx
 import os
 import random
+from pyecore.resources.xmi import XMIResource
+from scipy.sparse import csr_matrix
 import numpy
 import itertools
+from src import decoder
+
+
+def rollback_temporary_change(exp_ref):
+    if len(exp_ref) > 0:
+        for ref in exp_ref:
+            ref.upperBound = ref.upperBound - 1
 
 
 class ENCODE_M2G:
     id_iter = itertools.count()  # It Generates a new ID incrementally by each call
     map_class_iter = itertools.count()  # It Generates a new number incrementally by each call
     map_iter = itertools.count(1)  # It Generates a new number incrementally by each call (it starts from 1)
+    name_iter = itertools.count(1)  # It Generates a new number incrementally by each call (it starts from 1)
 
     classes = {}  # all classes inside metamodel
     unregulated_inheritance = []  # all classes inside metamodel with unsolved parent
     objects = []  # An array including all objects/elements in xmi file
     matrix_of_graph: ndarray = []  # 2D-Matrix of corresponding graph
+    enum_dict = {}  # A set of class's EEnum by enum name
+    obj_attrs_dict = {}  # A set of class's Attributes by class name
     references_dictionary = {}  # A set of class references features by class name
+    references_pair_dictionary = {}  # A set of pair class and their reference
     references_type_mapping = {}  # A dictionary that contains references mapped to numbers
     node_types = []  # 2D-Matrix containing node types(labels)
     true_containment_classes = []
     including_root = False  # Show that we consider root element as a node or not
     mm_root = []
+    c_sparse_matrix = csr_matrix(numpy.zeros((10, 10)))
 
     def __init__(self, metamodel_name, model_name):
         self.load_model(metamodel_name, model_name)
@@ -40,7 +56,6 @@ class ENCODE_M2G:
         self.mm_root = resource.contents[0]
         exp_refs = self.check_for_bound_exception()
         rset.metamodel_registry[self.mm_root.nsURI] = self.mm_root
-
         self.including_root = True
         self.extract_classes_references(self.mm_root)
         try:
@@ -52,21 +67,30 @@ class ENCODE_M2G:
             self.extract_objects_form_model(model_root)
             output = self.create_matrix()
             create_triple_file(output, model_name, self.node_types)
-            create_square_matrix(output)
-            self.show_details()
+            adj_matrix = self.create_square_matrix(output)
+            # self.show_details()
+            self.prepare_decoder_data(adj_matrix)
         except pyecore.valuecontainer.BadValueError:
             raise Exception("Sorry, Pyecore cannot pars the xmi file. please check the order of inside element.")
+        rollback_temporary_change(exp_refs)
 
-        self.rollback_temporary_change(exp_refs)
+    def prepare_decoder_data(self, adj_matrix):
+        decoder.DECODE_G2M(self.mm_root, self.classes, self.obj_attrs_dict, self.references_pair_dictionary,
+                           self.enum_dict, self.node_types, adj_matrix)
+        return self.mm_root, self.classes, self.obj_attrs_dict, self.references_pair_dictionary, self.enum_dict,\
+               self.node_types, adj_matrix
 
     def show_details(self):
         print("...................EClass mapping............")
         dictionary_items = self.classes.items()
         for item in dictionary_items:
-            print("Node_type:", item[0], ": ", item[1])
+            print("Class_type:", item[0], ": ", item[1])
         print("\n...................Nodes mapping...................")
         for h in self.node_types:
             print("Node_id:", h[0], "Node_type", h[1])
+        print("\n..................Class attributes....................")
+        for i in self.obj_attrs_dict:
+            print("Class:", i, "Attributes:", self.obj_attrs_dict[i])
         print("\n...................Reference mapping...................")
         print("Mapping-> no relation: ", 0)
         for o in self.references_type_mapping:
@@ -92,11 +116,6 @@ class ENCODE_M2G:
                                 exp_ref.append(ref)
         return exp_ref
 
-    def rollback_temporary_change(self, exp_ref):
-        if len(exp_ref) > 0:
-            for ref in exp_ref:
-                ref.upperBound = ref.upperBound - 1
-
     def extract_classes_references(self, metamodel_root):
         if self.mm_root.eClass.name != "EPackage":
             self.classes.update({self.mm_root.eClass.name: next(self.map_class_iter)})
@@ -104,39 +123,56 @@ class ENCODE_M2G:
             if e_class.eClass.name is "EClass":
                 if e_class.eStructuralFeatures.owner.name not in self.classes:
                     self.classes.update({e_class.eStructuralFeatures.owner.name: next(self.map_class_iter)})
-                references, containment_classes = self.extract_single_class_references(e_class)
+                references, containment_classes, references_pair, obj_attrs = self.extract_single_class_references(
+                    e_class)
                 self.references_dictionary.update(references)
+                self.references_pair_dictionary.update(references_pair)
+                self.obj_attrs_dict.update(obj_attrs)
                 append_items2list(containment_classes, self.true_containment_classes)
-            else:
-                # If there is a necessity for work on "EDataType", we can do it here!
-                pass
+            elif e_class.eClass.name is "EEnum":
+                # If there is any "EDataType", we can handel it here!
+                literals = []
+                for i in e_class.eLiterals:
+                    literals.append(i)
+                self.enum_dict.update({e_class.name: literals})
 
         #  Completing the reference dictionary by adding parent references that are not available at first
         for e_class in self.unregulated_inheritance:
-            references, containment_classes = self.extract_single_class_references(e_class)
+            references, containment_classes, references_pair, obj_attrs = self.extract_single_class_references(e_class)
             self.references_dictionary.update(references)
+            self.references_pair_dictionary.update(references_pair)
+            self.obj_attrs_dict.update(obj_attrs)
+            append_items2list(containment_classes, self.true_containment_classes)
 
     def extract_single_class_references(self, e_class):
         """"
+        extract single class references and attributes
         :param e_class: The root class
-        :return e_references:
+        :return: extracted data
         """
         true_containment_classes = []
         inner_references = []
+        pair_references = []
+        obj_attrs_dict = []
 
         for ref in e_class.eStructuralFeatures:
             if ref.eClass.name == "EReference":  # Extracting inner relations
+                pair_references.append([ref.eType.name, ref.name])
                 inner_references.append(ref.name)
                 if ref.name not in self.references_type_mapping:
                     self.references_type_mapping.update({ref.name: next(self.map_iter)})
                 if ref.containment:
                     true_containment_classes.append(ref.name)
+            elif ref.eClass.name == "EAttribute":
+                obj_attrs_dict.append([ref.name, ref.eType.name])
 
         # Creating references dictionary for the class
         references_dictionary = {e_class.name: inner_references}
+        references_pair_dictionary = {e_class.name: pair_references}
+        obj_attrs_dictionary = {e_class.name: obj_attrs_dict}
         self.add_inheritance_references(e_class, references_dictionary)
 
-        return references_dictionary, true_containment_classes
+        return references_dictionary, true_containment_classes, references_pair_dictionary, obj_attrs_dictionary
 
     def add_inheritance_references(self, e_class, references_dictionary):
         if len(e_class.eSuperTypes.items) > 0:  # It means the e_class has a parent
@@ -154,10 +190,12 @@ class ENCODE_M2G:
     def extract_objects_form_model(self, root_object):
         """
         :param root_object: The root class
-        :return:
         """
         for class_name in self.true_containment_classes:
-            all_instances_by_same_class_name = getattr(root_object, class_name)
+            if hasattr(root_object, class_name):
+                all_instances_by_same_class_name = getattr(root_object, class_name)
+            else:
+                continue
             if hasattr(all_instances_by_same_class_name, "items"):  # if we have several items in same type
                 for obj in all_instances_by_same_class_name:
                     if obj not in self.objects:
@@ -169,7 +207,7 @@ class ENCODE_M2G:
                                 self.extract_objects_form_model(obj)
             elif all_instances_by_same_class_name is not None:  # if we have just one item
                 all_instances_by_same_class_name._internal_id = next(
-                    self.id_iter)  # generating an ID for assign to each element
+                    self.id_iter)  # generating an ID for assign to the element
                 self.node_types.append([all_instances_by_same_class_name._internal_id,
                                         self.classes[all_instances_by_same_class_name._containment_feature.eType.name]])
                 self.objects.append(all_instances_by_same_class_name)
@@ -186,18 +224,14 @@ class ENCODE_M2G:
             (len(self.objects) + add_root_to_matrix, len(self.objects) + add_root_to_matrix))
         for obj in self.objects:
             self.seek_in_depth(obj, self.references_dictionary)
-        print("Matrix shape is:", self.matrix_of_graph.shape, "\n", self.matrix_of_graph)
-        for o in self.references_type_mapping:
-            print("Mapping->", o, " : ", self.references_type_mapping[o])
+        # print("Matrix shape is:", self.matrix_of_graph.shape, "\n", self.matrix_of_graph)
+        # for o in self.references_type_mapping:
+        #     print("Mapping->", o, " : ", self.references_type_mapping[o])
         return self.matrix_of_graph
-
-    def create_graph(self, objects):
-        node = NODE
 
     def seek_in_depth(self, obj, references_dictionary):
         """
         Checking inside relations and adding corresponding edges
-
         :param obj: The object that we want to extract all elements inside it
         :param references_dictionary: set of class references features by class name
         :return:
@@ -212,7 +246,7 @@ class ENCODE_M2G:
                     if hasattr(inner_element, '_internal_id'):  # If we have a single inside element
                         if inner_element._internal_id is not None:
                             self.matrix_of_graph[obj._internal_id][inner_element._internal_id] = \
-                            self.references_type_mapping[inner_ref_name]
+                                self.references_type_mapping[inner_ref_name]
                     else:  # If we have a set of inside elements
                         if self.matrix_of_graph[obj._container._internal_id][
                             obj._internal_id] == 0 and obj._container._internal_id == 0:
@@ -221,21 +255,49 @@ class ENCODE_M2G:
                         for i in set_elements:
                             if i._internal_id is not None:
                                 if not (self.matrix_of_graph[obj._internal_id][i._internal_id] > 0):
-                                    self.matrix_of_graph[obj._internal_id][i._internal_id] = self.references_type_mapping[
-                                        inner_ref_name]
+                                    self.matrix_of_graph[obj._internal_id][i._internal_id] = \
+                                        self.references_type_mapping[
+                                            inner_ref_name]
                                 if i._container._internal_id == 0:
                                     self.check_and_add_relations_with_root(i)
 
     def check_and_add_relations_with_root(self, obj):
+        """
+        check and add relations with root
+        :param obj: an inner object existing in model
+        """
         if self.including_root:
             # Add an relation type for the root's relations
             self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = self.references_type_mapping[
                 obj._containment_feature.name]
 
+    def create_square_matrix(self, matrix):
+        """
+        convert input matrix to a square matrix
+        :param matrix: adjacency matrix
+        :return:
+        """
+        for idx, row in enumerate(matrix):
+            for idy, val in enumerate(row):
+                if val > 0:
+                    matrix[idx, idy] = 1
+                    matrix[idy, idx] = 1
+        self.c_sparse_matrix = csr_matrix(matrix)
+        print("Matrix for NetGAN: ", self.c_sparse_matrix.count_nonzero(), "\n", matrix)
+        return matrix
+
 
 def create_triple_file(matrix, ds_name, labels):
+    """
+    prepare data for he_gan
+    :param matrix: adjacency matrix
+    :param ds_name: data set name
+    :param labels: list of node labels (object types)
+    """
+    if ds_name.endswith('.xmi'):
+        ds_name = ds_name[:-4]
     first_line = True
-    with open(ds_name + '_triple.dat', 'w') as f:
+    with open('../output_DS/'+ds_name + '_triple.dat', 'w') as f:
         for idx, row in enumerate(matrix):
             for idy, val in enumerate(row):
                 if val > 0:
@@ -245,7 +307,7 @@ def create_triple_file(matrix, ds_name, labels):
                     f.write(line)
                     first_line = False
     first_line = True
-    with open(ds_name + '_label.dat', 'w') as file:
+    with open('../output_DS/'+ds_name + '_label.dat', 'w') as file:
         for i in labels:
             line = "\n" + str(i[0]) + "  " + str(i[1])
             if first_line:
@@ -254,19 +316,9 @@ def create_triple_file(matrix, ds_name, labels):
             first_line = False
 
 
-def create_square_matrix(matrix):
-    for idx, row in enumerate(matrix):
-        for idy, val in enumerate(row):
-            if val > 0:
-                matrix[idx, idy] = 1
-                matrix[idy, idx] = 1
-    print("Matrix for NetGAN: \n",matrix)
-    return matrix
-
-
 def look_inside(obj):
     """
-    :param obj: The object that we want to look inside it
+    :param obj: The object that we want to look elements that are inside it
     """
     print(".............. Checking inside object .................")
     temp = vars(obj)
@@ -281,36 +333,11 @@ def append_items2list(input_list, cumulative_list):
     return cumulative_list
 
 
-class NODE:
-    id = 0
-    type = ""
-    information = []
-    label = ""
-
-
-class GRAPH:
-    nodes = []
-
-#     for ref in e_class.eStructuralFeatures.items:
-#         if ref.eClass.name == "EReference":
-#             e_references_temp.append(ref.name)
-#             if ref.containment:
-#                 true_containment_classes.append(ref.containment)
-#             if ref.eOpposite is not None:
-#                 e_opposites.append([ref.name, ref.eOpposite.name])
-# def check_name_uniqueness(name_list):
-#     """
-#     Finding elements with the same name in input array and changing name of the last one
-#
-#     :param name_list: a String array
-#     :return name_list: changed String array
-#     """
-#     k = 0
-#     for item in name_list:
-#         k += 1
-#         for i in range(k, len(name_list), 1):
-#             if item == name_list[i]:
-#                 print("conflict founded: We have two references with name <", item, ">")
-#                 n = random.randint(0, 10000)
-#                 name_list[i] = item + str(n)
-#     return name_list
+if __name__ == "__main__":
+    # ENCODE_M2G(metamodel_name="x2.ecore", model_name="result999_1.xmi")
+    # ENCODE_M2G(metamodel_name="x1.ecore", model_name="result0_1.xmi")
+    ENCODE_M2G(metamodel_name="car_wash.ecore", model_name="CarWash01.xmi")
+    # ENCODE_M2G(metamodel_name="AIDS.ecore", model_name="graph2.xmi")
+    # ENCODE_M2G(metamodel_name="Tree.ecore", model_name="tree.xmi")
+    # ENCODE_M2G(metamodel_name="fsa.ecore", model_name="FSAModel.xmi")
+    # ENCODE_M2G(metamodel_name="basicfamily.ecore", model_name="Family100.xmi")

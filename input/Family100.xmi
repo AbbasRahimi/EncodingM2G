@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<www.basicfamilyMM.com:FamilyRoot
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:www.basicfamilyMM.com="www.basicfamilyMM.com"
+    xsi:schemaLocation="www.basicfamilyMM.com ../metamodel/basicfamily.ecore"
+    name="James family">
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="father"
+      hasChild="//@HasMember.2 //@HasMember.3 //@HasMember.4 //@HasMember.5 //@HasMember.6"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="mother"
+      hasChild="//@HasMember.2 //@HasMember.3 //@HasMember.4 //@HasMember.5 //@HasMember.6"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="child1"
+      father="//@HasMember.0"
+      mother="//@HasMember.1"
+      hasParent="//@HasMember.0 //@HasMember.1"
+      hasChild="//@HasMember.7 //@HasMember.8"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="child2"
+      father="//@HasMember.0"
+      mother="//@HasMember.1"
+      hasParent="//@HasMember.0 //@HasMember.1"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="f_chlid1"
+      father="//@HasMember.0"
+      mother="//@HasMember.1"
+      hasParent="//@HasMember.0 //@HasMember.1"
+      hasChild="//@HasMember.7 //@HasMember.8"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="f_child2"
+      father="//@HasMember.0"
+      mother="//@HasMember.1"
+      hasParent="//@HasMember.0 //@HasMember.1"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="f_child3"
+      father="//@HasMember.0"
+      mother="//@HasMember.1"
+      hasParent="//@HasMember.0 //@HasMember.1"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="grandchild1"
+      father="//@HasMember.2"
+      mother="//@HasMember.4"
+      hasParent="//@HasMember.4 //@HasMember.2"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="grandchild2"
+      father="//@HasMember.2"
+      mother="//@HasMember.4"
+      hasParent="//@HasMember.4 //@HasMember.2"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="grandchild3"
+      father="//@HasMember.2"
+      mother="//@HasMember.5"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="g4"
+      father="//@HasMember.2"
+      mother="//@HasMember.4"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="g5"
+      father="//@HasMember.3"
+      mother="//@HasMember.5"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="g6"
+      father="//@HasMember.3"
+      mother="//@HasMember.5"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="g7"
+      father="//@HasMember.3"
+      mother="//@HasMember.5"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="g8"
+      father="//@HasMember.3"
+      mother="//@HasMember.5"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="g9"
+      father="//@HasMember.7"
+      mother="//@HasMember.9"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="g10"
+      father="//@HasMember.3"
+      mother="//@HasMember.5"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="g11"
+      father="//@HasMember.7"
+      mother="//@HasMember.9"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="g12"
+      father="//@HasMember.7"
+      mother="//@HasMember.9"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Man"
+      name="g13"
+      father="//@HasMember.7"
+      mother="//@HasMember.9"/>
+  <HasMember
+      xsi:type="www.basicfamilyMM.com:Woman"
+      name="g14"
+      father="//@HasMember.2"
+      mother="//@HasMember.4"/>
+</www.basicfamilyMM.com:FamilyRoot>
