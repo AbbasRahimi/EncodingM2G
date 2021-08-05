@@ -12,7 +12,7 @@ from pyecore.resources.xmi import XMIResource
 from scipy.sparse import csr_matrix
 import numpy
 import itertools
-from src import decoder
+import decoder
 
 
 def rollback_temporary_change(exp_ref):
