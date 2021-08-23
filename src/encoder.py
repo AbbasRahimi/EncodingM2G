@@ -75,10 +75,10 @@ class ENCODE_M2G:
         rollback_temporary_change(exp_refs)
 
     def prepare_decoder_data(self, adj_matrix):
-        decoder.DECODE_G2M(self.mm_root, self.classes, self.obj_attrs_dict, self.references_pair_dictionary,
-                           self.enum_dict, self.node_types, adj_matrix)
-        return self.mm_root, self.classes, self.obj_attrs_dict, self.references_pair_dictionary, self.enum_dict,\
-               self.node_types, adj_matrix
+        decoder.DECODE_G2M(self.mm_root, self.classes, self.obj_attrs_dict, self.references_type_mapping,
+                           self.references_pair_dictionary, self.enum_dict, self.node_types, adj_matrix)
+        return self.mm_root, self.classes, self.obj_attrs_dict, self.references_type_mapping, \
+               self.references_pair_dictionary, self.enum_dict, self.node_types, adj_matrix
 
     def show_details(self):
         print("...................EClass mapping............")
@@ -227,6 +227,10 @@ class ENCODE_M2G:
         # print("Matrix shape is:", self.matrix_of_graph.shape, "\n", self.matrix_of_graph)
         # for o in self.references_type_mapping:
         #     print("Mapping->", o, " : ", self.references_type_mapping[o])
+        for i in range(0, len(self.matrix_of_graph)):
+            for j in range(0, len(self.matrix_of_graph)):
+                if self.matrix_of_graph[i][j] > 0:
+                    self.matrix_of_graph[j][i] = self.matrix_of_graph[i][j]
         return self.matrix_of_graph
 
     def seek_in_depth(self, obj, references_dictionary):
@@ -297,7 +301,7 @@ def create_triple_file(matrix, ds_name, labels):
     if ds_name.endswith('.xmi'):
         ds_name = ds_name[:-4]
     first_line = True
-    with open('../output_DS/'+ds_name + '_triple.dat', 'w') as f:
+    with open('../output_DS/' + ds_name + '_triple.dat', 'w') as f:
         for idx, row in enumerate(matrix):
             for idy, val in enumerate(row):
                 if val > 0:
@@ -307,7 +311,7 @@ def create_triple_file(matrix, ds_name, labels):
                     f.write(line)
                     first_line = False
     first_line = True
-    with open('../output_DS/'+ds_name + '_label.dat', 'w') as file:
+    with open('../output_DS/' + ds_name + '_label.dat', 'w') as file:
         for i in labels:
             line = "\n" + str(i[0]) + "  " + str(i[1])
             if first_line:
@@ -335,8 +339,8 @@ def append_items2list(input_list, cumulative_list):
 
 if __name__ == "__main__":
     # ENCODE_M2G(metamodel_name="x2.ecore", model_name="result999_1.xmi")
-    # ENCODE_M2G(metamodel_name="x1.ecore", model_name="result0_1.xmi")
-    ENCODE_M2G(metamodel_name="car_wash.ecore", model_name="CarWash01.xmi")
+    ENCODE_M2G(metamodel_name="x1.ecore", model_name="result0_1.xmi")
+    # ENCODE_M2G(metamodel_name="car_wash.ecore", model_name="CarWash03.xmi")
     # ENCODE_M2G(metamodel_name="AIDS.ecore", model_name="graph2.xmi")
     # ENCODE_M2G(metamodel_name="Tree.ecore", model_name="tree.xmi")
     # ENCODE_M2G(metamodel_name="fsa.ecore", model_name="FSAModel.xmi")

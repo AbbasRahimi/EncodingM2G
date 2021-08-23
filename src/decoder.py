@@ -17,7 +17,7 @@ def create_xmi_file(root):
     resource = XMIResource(URI('initial.xmi'))
     resource.append(root)  # We add the root to the resource
     resource.save()  # will save the result in 'initial.xmi'
-    resource.save(output=URI('../output/output' + time + '.xmi'))  # save the result in 'output.xmi'
+    resource.save(output=URI('../output/' + root.eClass.name + time + '.xmi'))  # save the result in 'output.xmi'
 
 
 class DECODE_G2M:
@@ -26,13 +26,16 @@ class DECODE_G2M:
     classes = {}  # all classes inside metamodel
     enum_dict = {}  # A set of class's EEnum by enum name
     obj_attrs_dict = {}  # A set of class's Attributes by class name
+    references_type_mapping = {}  # A dictionary that contains references mapped to numbers
     references_pair_dictionary = {}  # A set of pair class and their reference
     mm_root = []
 
-    def __init__(self, mm_root, classes, obj_attrs_dict, references_pair_dictionary, enum_dict, obj_types, adj_matrix):
+    def __init__(self, mm_root, classes, obj_attrs_dict, references_type_mapping, references_pair_dictionary, enum_dict,
+                 obj_types, adj_matrix):
         self.mm_root = mm_root
         self.classes = classes
         self.obj_attrs_dict = obj_attrs_dict
+        self.references_type_mapping = references_type_mapping
         self.references_pair_dictionary = references_pair_dictionary
         self.enum_dict = enum_dict
         # obj_types = ["Family", "Member", "Member", "Address", "Address"]
@@ -68,6 +71,7 @@ class DECODE_G2M:
             new_obj = self.set_obj_attrs(new_obj)
             elements.append(new_obj)
 
+        typed_matrix = adj_matrix
         n = len(elements)
         for i in range(0, n):
             for j in range(0, n):
@@ -78,7 +82,9 @@ class DECODE_G2M:
                             if ref[0] == generated_model_type_list[j]:
                                 if getattr(elements[i], ref[1]) is not None:
                                     getattr(elements[i], ref[1]).append(elements[j])
-
+                                    typed_matrix[i][j] = self.references_type_mapping[ref[1]]
+                                    typed_matrix[j][i] = typed_matrix[i][j]
+        print("_________\n", typed_matrix)
         root = elements[0]
         create_xmi_file(root)
 

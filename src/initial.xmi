@@ -1,37 +1,15 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<car_wash:CarWash xmlns:xmi="http://www.omg.org/XMI" xmlns:car_wash="http://www.example.org/car_wash" name="name1" xmi:version="2.0">
-  <hasCustomer name="name13" age="23" id="12">
-    <hasCar colour="colour14" id="27" receivedServices="//@hasService.0"/>
-    <hasCar colour="colour15" id="46" receivedServices="//@hasService.1"/>
-  </hasCustomer>
-  <hasCustomer name="name16" age="73" id="25">
-    <hasCar colour="colour17" id="30" receivedServices="//@hasService.2"/>
-  </hasCustomer>
-  <hasCustomer name="name18" age="46" id="51">
-    <hasCar colour="colour19" id="22" receivedServices="//@hasService.1 //@hasService.3"/>
-  </hasCustomer>
-  <hasCustomer name="name20" age="39" id="46">
-    <hasCar colour="colour21" id="49" receivedServices="//@hasService.3 //@hasService.4 //@hasService.5"/>
-  </hasCustomer>
-  <hasCustomer name="name22" age="28" id="39">
-    <hasCar colour="colour23" id="70" receivedServices="//@hasService.5 //@hasService.6 //@hasService.7"/>
-    <hasCar colour="colour24" id="54" receivedServices="//@hasService.7 //@hasService.10"/>
-    <hasCar colour="colour25" id="28" receivedServices="//@hasService.8 //@hasService.9"/>
-  </hasCustomer>
-  <bill id="20" total_cost="30" services="//@hasService.0 //@hasService.1"/>
-  <bill id="63" total_cost="76" payment="credit" services="//@hasService.2"/>
-  <bill id="67" total_cost="43" payment="credit" services="//@hasService.3 //@hasService.7"/>
-  <bill id="68" total_cost="50" services="//@hasService.7 //@hasService.8"/>
-  <bill id="58" total_cost="80" payment="credit" services="//@hasService.0 //@hasService.7"/>
-  <hasService id="29" s_name="s_name2" cost="64"/>
-  <hasService id="10" s_name="s_name3" cost="18"/>
-  <hasService id="58" s_name="s_name4" cost="52"/>
-  <hasService id="18" s_name="s_name5" cost="46"/>
-  <hasService id="10" s_name="s_name6" cost="64"/>
-  <hasService id="69" s_name="s_name7" cost="71"/>
-  <hasService id="67" s_name="s_name8" cost="11"/>
-  <hasService id="16" s_name="s_name9" cost="78"/>
-  <hasService id="13" s_name="s_name10" cost="44"/>
-  <hasService id="46" s_name="s_name11" cost="45"/>
-  <hasService id="37" s_name="s_name12" cost="35"/>
-</car_wash:CarWash>
+<Family:Family xmlns:xmi="http://www.omg.org/XMI" xmlns:Family="www.Family.com" Surname="Surname1" xmi:version="2.0">
+  <has Education="PhD" FirstName="FirstName2" Age="65"/>
+  <has FirstName="FirstName3" Age="14"/>
+  <has FirstName="FirstName4" Age="47"/>
+  <has Education="PhD" FirstName="FirstName5" Age="44"/>
+  <has Education="PhD" FirstName="FirstName6" Age="33"/>
+  <has Education="PhD" FirstName="FirstName7" Age="49"/>
+  <has Education="master" FirstName="FirstName8" Age="29"/>
+  <has Education="PhD" FirstName="FirstName9" Age="17"/>
+  <has Education="PhD" FirstName="FirstName10" Age="69"/>
+  <has Education="PhD" FirstName="FirstName11" Age="33"/>
+  <Addr Alley="Alley13" Number="49" Street="Street12"/>
+  <Addr Alley="Alley15" Number="63" Street="Street14"/>
+</Family:Family>
