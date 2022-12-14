@@ -15,5 +15,3 @@ code/: The source codes
 cd code
 
 python test.py
-
-[Abbas Rahimi](https://github.com/AbbasRahimi)
