@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pyecore.resources import ResourceSet, URI
 from pyecore.ecore import EClass, EReference, EObject, EString, EPackage
 
@@ -14,25 +16,15 @@ def create_mediator_eclass(ref_pairs, package, root):
         package.eClassifiers.append(mediator_eclass)
 
         # Create references from eclass1 to mediator and mediator to eclass2
-        upper_bound = -1
-        lower_bound = 0
-        if hasattr(references[0], 'upperBound'):
-            upper_bound = references[0].upperBound
-        # print(references[0], "_up1 ref[0]_", references[0].upperBound, "_ref[1]_", references[1].upperBound)
-        if hasattr(references[0], 'lowerBound'):
-            lower_bound = references[0].lowerBound
-        # print(references[0], "_low1 ref[0]_", references[0].lowerBound, "_ref[1]_", references[1].lowerBound)
+        upper_bound = ref_pair.upperBound if hasattr(ref_pair, 'upperBound') else -1
+        lower_bound = ref_pair.lowerBound if hasattr(ref_pair, 'lowerBound') else 0
+        r2m_name = f"{eclass1.name[:2]}_to_{ref_pair.name}_Mediator"
+        m2r_name = f"{ref_pair.name}_Mediator_to_{eclass2.name[:2]}"
+        ref_to_mediator = EReference(name=r2m_name, upper=upper_bound, lower=lower_bound, eType=mediator_eclass)
+        ref_from_mediator = EReference(name=m2r_name, upper=upper_bound, lower=lower_bound, eType=eclass2)
 
-        ref_to_mediator1 = EReference(name=f"{eclass1.name[:2]}_to_{ref_pair.name}_Mediator", upper=upper_bound,
-                                      lower=lower_bound,
-                                      eType=mediator_eclass)
-
-        ref_from_mediator1 = EReference(name=f"{ref_pair.name}_Mediator_to_{eclass2.name[:2]}", upper=upper_bound,
-                                        lower=lower_bound,
-                                        eType=eclass2)
-
-        eclass1.eStructuralFeatures.append(ref_to_mediator1)
-        mediator_eclass.eStructuralFeatures.append(ref_from_mediator1)
+        eclass1.eStructuralFeatures.append(ref_to_mediator)
+        mediator_eclass.eStructuralFeatures.append(ref_from_mediator)
 
         # Create references to the root class
         ref1_to_root = EReference(name=f"{eclass1.name[:2]}_{ref_pair.name}_Mediator_to_root", upper=-1,
@@ -43,22 +35,8 @@ def create_mediator_eclass(ref_pairs, package, root):
     return mediator_eclass
 
 
-# def replace_references_with_mediator(referencing_pairs, e_opposites, package, root):
-#     for ref_pair in referencing_pairs:
-# print("HaHAh: ", eclass1, " ____ ", eclass2, " ____ ", referencing_pairs)
-# mediator_eclass = create_mediator_eclass(ref_pair, e_opposites, package, root)
-# Replace references from eclass1 to eclass2 with references to mediator
-# for ref in eclass1.eAllReferences():
-#     if ref.eType is eclass2:
-#         ref.eType = mediator_eclass
-# for ref in eclass2.eAllReferences():
-#     if ref.eType is eclass1:
-#         ref.eType = mediator_eclass
-
-
 def find_referencing_pairs(eclasses):
     referencing_pairs = []
-    e_opposites = []
     for eclass1 in eclasses:
         for eclass2 in eclasses:
             # if not_seen_classes(eclass1, eclass2, referencing_pairs):
@@ -70,21 +48,14 @@ def find_referencing_pairs(eclasses):
                         references_in_between.append(ref1)
                         # manage EOpposites
                         if ref1.eOpposite is not None:
-                            print("ref1 Type: ", ref1.name, "__eOpposite: ", ref1.eOpposite)
                             e_opp_refs_in_between.append(ref1.eOpposite)
-                            e_opposites.append([ref1.name, ref1.eOpposite.name])
-                for ref2 in eclass2.eAllReferences():
-                    if ref2.eType is eclass1:
-                        if ref2.eOpposite is None:  # manage EOpposites
-                            references_in_between.append(ref2)
-                            # print("ref2 Type: ", ref2.name)
-                            # e_opposites.append([ref2.name, ref2.eOpposite.name])
 
                 if len(references_in_between) > 1:
                     e_opp_refs = eclass2, eclass1, e_opp_refs_in_between
                     if not check_seen_ref(e_opp_refs, referencing_pairs):
                         referencing_pairs.append((eclass1, eclass2, references_in_between))
-                        print("eclass1:", eclass1, "eclass2:", eclass2, "\n---+ : ", references_in_between)
+                        print("eclass1:", eclass1, "eclass2:", eclass2, "\n-> : ", references_in_between)
+
     return referencing_pairs
 
 
@@ -104,16 +75,24 @@ def remove_old_references(referencing_pairs):
         for ref in eclass1.eAllReferences():
             for reference in ref_pairs:
                 if ref.name is reference.name:
+                    # print("Reference ", ref, " is removed from class ", eclass1)
                     eclass1.eStructuralFeatures.remove(ref)
+                    if ref.eOpposite is not None:
+                        eclass2.eStructuralFeatures.remove(ref.eOpposite)
+                        # print("Reference ", ref.eOpposite, " is removed from class ", eclass2)
         for ref in eclass2.eAllReferences():
             for reference in ref_pairs:
-                if ref.eType is reference.name:
+                if ref.name is reference.name:
+                    # print("Reference ", ref, " is removed from class ", eclass2)
                     eclass2.eStructuralFeatures.remove(ref)
+                    if ref.eOpposite is not None:
+                        eclass1.eStructuralFeatures.remove(ref.eOpposite)
+                        # print("Reference ", ref.eOpposite, " is removed from class ", eclass1)
 
 
 def main():
     # Load the Ecore file
-    ecore_file = '../input/RetalSystem.ecore'
+    ecore_file = '../input/RetalSystem4.ecore'
     resource_set = ResourceSet()
     resource = resource_set.get_resource(URI(ecore_file))
     package = resource.contents[0]  # Assuming there's only one root package in the file
@@ -142,7 +121,8 @@ def main():
     print(package)
 
     # Serialize the updated Ecore model to a new Ecore file
-    output_file = '../output1/output_file.ecore'  # Change this to the desired output file path
+    output_file = '../output1/output_file' + datetime.now().strftime(
+        '%H%M%S') + '.ecore'  # Change this to the desired output file path
     resource_set = ResourceSet()
     output_resource = resource_set.create_resource(URI(output_file))
     output_resource.append(package)
