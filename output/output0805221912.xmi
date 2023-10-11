@@ -33,5 +33,5 @@
   <hasService id="16" s_name="s_name9" cost="78"/>
   <hasService id="13" s_name="s_name10" cost="44"/>
   <hasService id="46" s_name="s_name11" cost="45"/>
-  <hasService id="37" s_name="s_name12" cost="35"/>
+  <hasService id="37" s_name="s_name12" cost="15"/>
 </car_wash:CarWash>
