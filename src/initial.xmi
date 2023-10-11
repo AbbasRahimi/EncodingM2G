@@ -1,15 +1,12 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<Family:Family xmlns:xmi="http://www.omg.org/XMI" xmlns:Family="www.Family.com" Surname="Surname1" xmi:version="2.0">
-  <has Education="PhD" FirstName="FirstName2" Age="65"/>
-  <has FirstName="FirstName3" Age="14"/>
-  <has FirstName="FirstName4" Age="47"/>
-  <has Education="PhD" FirstName="FirstName5" Age="44"/>
-  <has Education="PhD" FirstName="FirstName6" Age="33"/>
-  <has Education="PhD" FirstName="FirstName7" Age="49"/>
-  <has Education="master" FirstName="FirstName8" Age="29"/>
-  <has Education="PhD" FirstName="FirstName9" Age="17"/>
-  <has Education="PhD" FirstName="FirstName10" Age="69"/>
-  <has Education="PhD" FirstName="FirstName11" Age="33"/>
-  <Addr Alley="Alley13" Number="49" Street="Street12"/>
-  <Addr Alley="Alley15" Number="63" Street="Street14"/>
-</Family:Family>
+<fsa:FSAModel xmlns:xmi="http://www.omg.org/XMI" xmlns:fsa="http://www.example.org/fsa" xmi:version="2.0">
+  <transitions event="event1" target="//@states.1" source="//@states.1"/>
+  <transitions event="event2" target="//@states.3" source="//@states.3"/>
+  <transitions event="event3" target="//@states.2" source="//@states.2"/>
+  <transitions event="event4" target="//@states.4" source="//@states.4"/>
+  <states isInitial="true" name="name5" weight="60" outgoingTransitions="//@transitions.0 //@transitions.1 //@transitions.2" incomingTransitions="//@transitions.0 //@transitions.1 //@transitions.2"/>
+  <states isFinal="true" name="name6" weight="23" outgoingTransitions="//@transitions.0" incomingTransitions="//@transitions.0"/>
+  <states isInitial="true" name="name7" weight="30" outgoingTransitions="//@transitions.2" incomingTransitions="//@transitions.2"/>
+  <states isInitial="true" name="name8" weight="76" outgoingTransitions="//@transitions.1 //@transitions.3" incomingTransitions="//@transitions.1 //@transitions.3"/>
+  <states isInitial="true" name="name9" weight="11" outgoingTransitions="//@transitions.3" incomingTransitions="//@transitions.3"/>
+</fsa:FSAModel>

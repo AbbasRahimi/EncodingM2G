@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rentalSystem:RentalSystem
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:rentalSystem="www.rentalSystem.com"
+    xsi:schemaLocation="www.rentalSystem.com RetalSystem.ecore">
+  <houses rented="//@persons.1"
+      belongs="//@persons.0"
+      name="h1"/>
+  <houses rented="//@persons.2"
+      belongs="//@persons.0"
+      name="h2"/>
+  <houses rented="//@persons.0"
+      belongs="//@persons.1"
+      name="h3"/>
+  <houses belongs="//@persons.2"
+      name="h4"/>
+  <persons rent="//@houses.2"
+      owns="//@houses.0 //@houses.1"
+      name="p1"/>
+  <persons rent="//@houses.0"
+      owns="//@houses.2"
+      name="p2"/>
+  <persons rent="//@houses.1"
+      owns="//@houses.3"
+      name="p3"/>
+</rentalSystem:RentalSystem>

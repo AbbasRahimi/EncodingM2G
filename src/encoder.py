@@ -68,15 +68,14 @@ class ENCODE_M2G:
             output = self.create_matrix()
             create_triple_file(output, model_name, self.node_types)
             adj_matrix = self.create_square_matrix(output)
-            # self.show_details()
             self.prepare_decoder_data(adj_matrix)
+            # self.show_details()
         except pyecore.valuecontainer.BadValueError:
-            raise Exception("Sorry, Pyecore cannot pars the xmi file. please check the order of inside element.")
+            raise Exception("Sorry, Pyecore cannot pars the xmi file. Please check the order of the inner elements.")
         rollback_temporary_change(exp_refs)
 
     def prepare_decoder_data(self, adj_matrix):
-        decoder.DECODE_G2M(self.mm_root, self.classes, self.obj_attrs_dict, self.references_type_mapping,
-                           self.references_pair_dictionary, self.enum_dict, self.node_types, adj_matrix)
+        # decoder.DECODE_G2M(self.mm_root, self.classes, self.obj_attrs_dict, self.references_type_mapping,self.references_pair_dictionary, self.enum_dict, self.node_types, adj_matrix)
         return self.mm_root, self.classes, self.obj_attrs_dict, self.references_type_mapping, \
                self.references_pair_dictionary, self.enum_dict, self.node_types, adj_matrix
 
@@ -103,11 +102,11 @@ class ENCODE_M2G:
             print("True_containment: ", j)
 
     def check_for_bound_exception(self):
-        # if we have upperBound-lowerBound=1 then pyecore cannot get set of elements, so we will temporary
+        # if we have upperBound-lowerBound=1 then pyecore cannot get set of elements, so we will temporarily
         # add 1 to upperBound
         exp_ref = []
         for e_class in self.mm_root.eClassifiers:
-            if e_class.eClass.name is "EClass":
+            if e_class.eClass.name == "EClass":
                 for ref in e_class.eStructuralFeatures:
                     if ref.eClass.name == "EReference":  # Extracting inner relations
                         if hasattr(ref, "lowerBound") and hasattr(ref, "upperBound"):
@@ -116,20 +115,36 @@ class ENCODE_M2G:
                                 exp_ref.append(ref)
         return exp_ref
 
+    # TODO consider inheritance
     def extract_classes_references(self, metamodel_root):
         if self.mm_root.eClass.name != "EPackage":
             self.classes.update({self.mm_root.eClass.name: next(self.map_class_iter)})
         for e_class in metamodel_root.eClassifiers:
-            if e_class.eClass.name is "EClass":
+            if e_class.eClass.name == "EClass":
+                childReferences = {}
+                if e_class.abstract:
+                    for sub_class in metamodel_root.eClassifiers:
+                        if sub_class.eClass.name == "EClass":
+                            if getattr(sub_class, "eSuperTypes") is not None:
+                                if len(sub_class.eSuperTypes) > 0:
+                                    AbstractRef = sub_class.eSuperTypes[0]
+                                    if AbstractRef.name == e_class.name:
+                                        # TODO
+                                        if AbstractRef.name not in self.references_type_mapping:
+                                            self.references_type_mapping.update(
+                                                {AbstractRef.name + sub_class.name: next(self.map_iter)})
+                                        childReferences.update({sub_class: AbstractRef.name})
+                                        # print(sub_class, " is ", sub_class.eSuperTypes[0].name, "'s child!")
+                print("childReferences :", childReferences)
                 if e_class.eStructuralFeatures.owner.name not in self.classes:
                     self.classes.update({e_class.eStructuralFeatures.owner.name: next(self.map_class_iter)})
                 references, containment_classes, references_pair, obj_attrs = self.extract_single_class_references(
-                    e_class)
+                    e_class, childReferences)
                 self.references_dictionary.update(references)
                 self.references_pair_dictionary.update(references_pair)
                 self.obj_attrs_dict.update(obj_attrs)
                 append_items2list(containment_classes, self.true_containment_classes)
-            elif e_class.eClass.name is "EEnum":
+            elif e_class.eClass.name == "EEnum":
                 # If there is any "EDataType", we can handel it here!
                 literals = []
                 for i in e_class.eLiterals:
@@ -138,37 +153,50 @@ class ENCODE_M2G:
 
         #  Completing the reference dictionary by adding parent references that are not available at first
         for e_class in self.unregulated_inheritance:
+
             references, containment_classes, references_pair, obj_attrs = self.extract_single_class_references(e_class)
             self.references_dictionary.update(references)
             self.references_pair_dictionary.update(references_pair)
             self.obj_attrs_dict.update(obj_attrs)
             append_items2list(containment_classes, self.true_containment_classes)
 
-    def extract_single_class_references(self, e_class):
+    def extract_single_class_references(self, e_class, childReferences):  # TODO
         """"
         extract single class references and attributes
         :param e_class: The root class
+        :param childReferences: The child references of an abstract class
         :return: extracted data
         """
         true_containment_classes = []
         inner_references = []
         pair_references = []
         obj_attrs_dict = []
-
+        # print("childReferences::::::::", len(childReferences), "___", childReferences)
         for ref in e_class.eStructuralFeatures:
             if ref.eClass.name == "EReference":  # Extracting inner relations
                 pair_references.append([ref.eType.name, ref.name])
+                print("ref.eType.name:",ref.eType.name,"_ ref.name: ",ref.name)
                 inner_references.append(ref.name)
                 if ref.name not in self.references_type_mapping:
                     self.references_type_mapping.update({ref.name: next(self.map_iter)})
+                    # print("ref.name:", ref.name)
+                    # print("references_type_mapping:", self.references_type_mapping)
                 if ref.containment:
                     true_containment_classes.append(ref.name)
             elif ref.eClass.name == "EAttribute":
-                obj_attrs_dict.append([ref.name, ref.eType.name])
-
+                if hasattr(ref.eType, "name"):
+                    obj_attrs_dict.append([ref.name, ref.eType.name])
+                else:
+                    obj_attrs_dict.append([ref.name, "EString"])
+        if len(childReferences) > 0:
+            for childRef in childReferences:
+                print("Child's parent:: ", childRef)
+                print("eClass.name:: ", ref.name)
+                pair_references.append([childRef.name, e_class.name + childRef.name])
         # Creating references dictionary for the class
         references_dictionary = {e_class.name: inner_references}
         references_pair_dictionary = {e_class.name: pair_references}
+        print("references_pair_dictionary_________", references_pair_dictionary)
         obj_attrs_dictionary = {e_class.name: obj_attrs_dict}
         self.add_inheritance_references(e_class, references_dictionary)
 
@@ -217,16 +245,10 @@ class ENCODE_M2G:
 
     def create_matrix(self):
         # Create an empty 2D[len(input),len(input)] array as a matrix
-        add_root_to_matrix = 0
-        if self.including_root:
-            add_root_to_matrix = 1
         self.matrix_of_graph = numpy.zeros(
-            (len(self.objects) + add_root_to_matrix, len(self.objects) + add_root_to_matrix))
+            (len(self.objects) + 1, len(self.objects) + 1))
         for obj in self.objects:
             self.seek_in_depth(obj, self.references_dictionary)
-        # print("Matrix shape is:", self.matrix_of_graph.shape, "\n", self.matrix_of_graph)
-        # for o in self.references_type_mapping:
-        #     print("Mapping->", o, " : ", self.references_type_mapping[o])
         for i in range(0, len(self.matrix_of_graph)):
             for j in range(0, len(self.matrix_of_graph)):
                 if self.matrix_of_graph[i][j] > 0:
@@ -270,10 +292,9 @@ class ENCODE_M2G:
         check and add relations with root
         :param obj: an inner object existing in model
         """
-        if self.including_root:
-            # Add an relation type for the root's relations
-            self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = self.references_type_mapping[
-                obj._containment_feature.name]
+        # Add a relation type for the root's relations
+        self.matrix_of_graph[obj._container._internal_id][obj._internal_id] = self.references_type_mapping[
+            obj._containment_feature.name]
 
     def create_square_matrix(self, matrix):
         """
@@ -339,9 +360,9 @@ def append_items2list(input_list, cumulative_list):
 
 if __name__ == "__main__":
     # ENCODE_M2G(metamodel_name="x2.ecore", model_name="result999_1.xmi")
-    ENCODE_M2G(metamodel_name="x1.ecore", model_name="result0_1.xmi")
-    # ENCODE_M2G(metamodel_name="car_wash.ecore", model_name="CarWash03.xmi")
+    # ENCODE_M2G(metamodel_name="x1.ecore", model_name="result0_1.xmi")
+    ENCODE_M2G(metamodel_name="car_wash.ecore", model_name="CarWash01.xmi")
     # ENCODE_M2G(metamodel_name="AIDS.ecore", model_name="graph2.xmi")
     # ENCODE_M2G(metamodel_name="Tree.ecore", model_name="tree.xmi")
-    # ENCODE_M2G(metamodel_name="fsa.ecore", model_name="FSAModel.xmi")
+    # ENCODE_M2G(metamodel_name="fsa.ecore", model_name="FSAModel0.xmi")
     # ENCODE_M2G(metamodel_name="basicfamily.ecore", model_name="Family100.xmi")

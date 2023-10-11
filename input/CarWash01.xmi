@@ -35,12 +35,6 @@
   <hasService
       id="8"
       s_name="serv9"/>
-  <hasService
-      id="9"
-      s_name="serv10"/>
-  <hasService
-      id="10"
-      s_name="serv11"/>
   <hasCustomer
       name="c1"
       age="45">
@@ -75,6 +69,12 @@
         colour="black"
         receivedServices="//@hasService.3 //@hasService.4 //@hasService.5"/>
   </hasCustomer>
+  <bill id="3"
+      services="//@hasService.7 //@hasService.8"
+      customer="//@hasCustomer.3"/>
+  <bill id="4"
+      services="//@hasService.0 //@hasService.7"
+      customer="//@hasCustomer.4"/>
   <hasCustomer
       name="c5"
       id="4">
@@ -91,6 +91,12 @@
         colour="red"
         receivedServices="//@hasService.8 //@hasService.9"/>
   </hasCustomer>
+  <hasService
+      id="9"
+      s_name="serv10"/>
+  <hasService
+      id="10"
+      s_name="serv11"/>
   <bill services="//@hasService.0 //@hasService.1"
       customer="//@hasCustomer.0"/>
   <bill id="1"
@@ -99,10 +105,5 @@
   <bill id="2"
       services="//@hasService.3 //@hasService.7"
       customer="//@hasCustomer.2"/>
-  <bill id="3"
-      services="//@hasService.7 //@hasService.8"
-      customer="//@hasCustomer.3"/>
-  <bill id="4"
-      services="//@hasService.0 //@hasService.7"
-      customer="//@hasCustomer.4"/>
+
 </car_wash:CarWash>

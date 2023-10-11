@@ -38,11 +38,10 @@ class DECODE_G2M:
         self.references_type_mapping = references_type_mapping
         self.references_pair_dictionary = references_pair_dictionary
         self.enum_dict = enum_dict
-        # obj_types = ["Family", "Member", "Member", "Address", "Address"]
-        # adj_matrix = [[0, 1, 1, 1, 1], [1, 0, 0, 0, 0]
-        #     , [1, 0, 0, 0, 0], [1, 0, 0, 0, 0], [1, 0, 0, 0, 0]]
-        # self.create_initial_objects(obj_types, adj_matrix)
         self.create_initial_objects(self.get_obj_types(obj_types), adj_matrix)
+        print("Here in decoder.....")
+        # for i in obj_types:
+        #     print("obj_type: ", i)
 
     def get_obj_types(self, node_types):
         obj_types = []
@@ -53,12 +52,18 @@ class DECODE_G2M:
         return obj_types
 
     def create_initial_objects(self, obj_types, adj_matrix):
-        # creating an initial instance of each class in metamodel
+        # Creating an initial instance of each class existed in metamodel
         init_objects = {}
         class_items = self.classes.items()
         for e_class in self.mm_root.eClassifiers:
             for node_type in class_items:
-                if e_class.name == node_type[0]:
+                # print("create_initial_objects -> e_class.name:", e_class.name)
+                if hasattr(e_class, 'serializable'):
+                    print("{"+e_class.name + "} is ENum!")
+                elif e_class.abstract:
+                    print("{"+e_class.name + "} is abstract!")
+                elif e_class.name == node_type[0]:
+                    # print("create_initial_objects -> node_type[0]:", node_type[0])
                     obj = e_class()
                     obj.name = e_class.name
                     init_objects.update({e_class.name: obj})
@@ -70,6 +75,7 @@ class DECODE_G2M:
             new_obj = init_objects[obj_type].eClass()
             new_obj = self.set_obj_attrs(new_obj)
             elements.append(new_obj)
+            # print("new_obj:", new_obj.eClass)
 
         typed_matrix = adj_matrix
         n = len(elements)
@@ -79,14 +85,20 @@ class DECODE_G2M:
                     rel_dict = self.references_pair_dictionary[generated_model_type_list[i]]
                     if len(rel_dict) > 0:
                         for ref in rel_dict:
+                            # print("ref [0]:", ref[0], "__ rel_dict:", rel_dict)
                             if ref[0] == generated_model_type_list[j]:
+                                # print("element.eClass.name:", elements[i].eClass.name)
+                                # print("ref[1]:", ref[1])
+                                # print("___ has Attribute _", getattr(elements[i], ref[1]))
                                 if getattr(elements[i], ref[1]) is not None:
+                                    # print("subElement:", elements[j])
                                     getattr(elements[i], ref[1]).append(elements[j])
                                     typed_matrix[i][j] = self.references_type_mapping[ref[1]]
                                     typed_matrix[j][i] = typed_matrix[i][j]
         print("_________\n", typed_matrix)
         root = elements[0]
         create_xmi_file(root)
+        return typed_matrix
 
     def set_obj_attrs(self, obj):
         object_attrs = self.obj_attrs_dict[obj.eClass.name]
@@ -96,6 +108,8 @@ class DECODE_G2M:
                     setattr(obj, attr[0], attr[0] + str(next(self.name_iter)))
                 elif attr[1] == "EInt" or attr[1] == "EShort" or attr[1] == "ELong":
                     setattr(obj, attr[0], random.randint(10, 80))
+                elif attr[1] == "EDate":
+                    setattr(obj, attr[0], datetime.now())
                 elif attr[1] == "EFloat":
                     setattr(obj, attr[0], random.randint(10, 80) + random.choice([0.1, 0.25, 0.25, 0.75, 0.9]))
                 elif attr[1] == "EBoolean":
