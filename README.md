@@ -1,13 +1,13 @@
 # EncodingM2G
-Encoding model to graph.
+Encoding an Ecore instance model to a graph.
 
 # Evironment Setting
 Python == 3.7.6
 
 # Files in the folder
-input/: the metamodels(.ecore) and models(.xmi)
+input/: the metamodels(.ecore) and instance models(.xmi)
 
-png/: The figure of input metamodels (class diagram)
+png/: The figure of input metamodels
 
 code/: The source codes
 
