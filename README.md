@@ -14,4 +14,6 @@ code/: The source codes
 # Basic Usage
 cd code
 
+python multiple_ref_remover.py
 python test.py
+
